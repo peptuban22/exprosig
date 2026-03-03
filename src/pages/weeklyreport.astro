@@ -1,0 +1,29 @@
+---
+import Layout from '~/layouts/PageLayout.astro';
+
+const metadata = {
+  title: 'Weekly Report 2026 — Exprosig',
+};
+---
+
+<Layout metadata={metadata}>
+  <section class="relative md:py-12 py-8">
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="py-4 pt-0 md:py-4 text-center">
+        <h1 class="text-3xl md:text-4xl font-bold leading-tighter tracking-tighter mb-4 font-heading">
+          Summary Indikator Weekly Plan 2026
+        </h1>
+      </div>
+
+      <div class="relative overflow-hidden w-full pt-[56.25%] rounded-lg shadow-xl border border-slate-200 bg-white">
+        <iframe
+          class="absolute top-0 left-0 bottom-0 right-0 w-full h-full"
+          title="Summary Indikator Weekly Plan 2026"
+          src="https://app.powerbi.com/view?r=eyJrIjoiMWY3NGQ4NTEtMmZjZC00MmU2LTlmMTktZmJjNTkyM2Q3MjUzIiwidCI6IjUzYjkyMTJhLTAyMDEtNGZlMS04OTVkLTg1NWRjMjE2MDJjYyIsImMiOjEwfQ%3D%3D"
+          frameborder="0"
+          allowFullScreen="true"
+        ></iframe>
+      </div>
+    </div>
+  </section>
+</Layout>
