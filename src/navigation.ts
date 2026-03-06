@@ -4,12 +4,18 @@ export const headerData = {
   links: [
     {
       text: 'Dashboard',
-      href: getPermalink('/'),
+      links: [
+        {
+          text: 'Main Dashboard',
+          href: getPermalink('/'),
+        },
+        {
+          text: 'Monitoring Jasa',
+          href: getPermalink('/monitorjasa'),
+        },
+      ],
     },
-    {
-      text: 'Monitoring Jasa',
-      href: getPermalink('/monitorjasa'),
-    },
+
     {
       text: 'Weekly Report', // Mengarah langsung ke halaman baru
       href: getPermalink('/weeklyreport'),
