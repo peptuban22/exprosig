@@ -91,3 +91,31 @@
   margin-top: 0;
 }
 
+/* Custom Gradient Navigation for Exprosig */
+#header {
+  /* Gradient dari Teal ke Deep Blue */
+  background: linear-gradient(90deg, #0d9488 0%, #1e40af 100%);
+  transition: all 0.3s ease;
+}
+
+/* Memastikan teks menu utama berwarna putih agar terbaca di atas gradient */
+#header nav a, 
+#header [data-aw-toggle-menu],
+#header .text-muted {
+  @apply text-white hover:text-teal-100 !important;
+}
+
+/* Perbaikan Submenu (Dropdown) agar tetap putih bersih dengan teks gelap */
+#header .dropdown-menu {
+  @apply bg-white border border-slate-200 shadow-xl !important;
+}
+
+#header .dropdown-menu a {
+  @apply text-slate-700 hover:text-teal-600 !important;
+}
+
+/* Efek saat discroll: sedikit transparan agar tetap elegan */
+#header.scroll > div:first-child {
+  background: linear-gradient(90deg, rgba(212, 246, 243, 0.9) 0%, rgba(30, 170, 175, 0.9) 100%);
+  @apply backdrop-blur-md !important;
+}
