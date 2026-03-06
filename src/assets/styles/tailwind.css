@@ -94,7 +94,7 @@
 /* Custom Gradient Navigation for Exprosig */
 #header {
   /* Gradient dari Teal ke Deep Blue */
-  background: linear-gradient(90deg, #0d9488 0%, #1e40af 100%);
+  background: linear-gradient(0deg, #59aca5 0%, #15857b 100%);
   transition: all 0.3s ease;
 }
 
