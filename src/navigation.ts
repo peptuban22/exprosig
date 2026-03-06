@@ -6,11 +6,11 @@ export const headerData = {
       text: 'Dashboard',
       links: [
         {
-          text: 'Main Dashboard',
+          text: '📉 Main Dashboard',
           href: getPermalink('/'),
         },
         {
-          text: 'Monitoring Jasa',
+          text: '📊 Monitoring Jasa',
           href: getPermalink('/monitorjasa'),
         },
       ],
