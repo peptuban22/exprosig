@@ -1,0 +1,31 @@
+---
+import Layout from '~/layouts/PageLayout.astro';
+
+const metadata = {
+  title: 'Monitoring Jasa — Exprosig',
+};
+---
+
+<Layout metadata={metadata}>
+  <section class="relative md:py-12 py-8">
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="py-4 pt-0 md:py-4 text-center">
+        <h1 class="text-3xl md:text-4xl font-bold leading-tighter tracking-tighter mb-4 font-heading">
+          Monitoring Jasa
+        </h1>
+      </div>
+
+      <div class="relative overflow-hidden w-full pt-[75%] rounded-lg shadow-xl border border-slate-200 bg-white">
+        <iframe
+          class="absolute top-0 left-0 bottom-0 right-0 w-full h-full"
+          title="Monitoring Jasa"
+          src="https://lookerstudio.google.com/embed/reporting/211c3680-0720-4c9b-b316-167d40212ef5/page/MM3qF"
+          frameborder="0"
+          style="border:0"
+          allowfullscreen
+          sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+        </iframe>
+      </div>
+    </div>
+  </section>
+</Layout>

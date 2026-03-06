@@ -7,6 +7,10 @@ export const headerData = {
       href: getPermalink('/'),
     },
     {
+      text: 'Monitoring Jasa',
+      href: getPermalink('/monitorjasa'),
+    },
+    {
       text: 'Weekly Report', // Mengarah langsung ke halaman baru
       href: getPermalink('/weeklyreport'),
     },
