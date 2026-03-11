@@ -1,31 +1,53 @@
 ---
 import Layout from '~/layouts/PageLayout.astro';
-
-const metadata = { title: 'Exprosig — Dashboard Performance' };
+const metadata = { title: 'Exprosig — Interactive Dashboard' };
 ---
 
 <Layout metadata={metadata}>
   <section class="px-4 py-16 mx-auto max-w-7xl">
     <div class="max-w-xl mb-10 md:mx-auto sm:text-center lg:max-w-2xl md:mb-12">
       <h2 class="text-3xl font-bold leading-tighter tracking-tighter mb-4 font-heading">
-        Kiln Production Performance 2026
+        Kiln Performance Dashboard 2026
       </h2>
-      <p class="text-muted dark:text-slate-400">Data dinamis dari Google Sheets (Updated Daily via ETL).</p>
-      <p id="last-updated" class="text-xs text-teal-600 font-medium mt-2 italic"></p>
+      <p id="last-updated" class="text-xs text-teal-600 font-medium mt-2 italic font-mono">Menghubungkan ke Google Sheets...</p>
     </div>
 
-    <div id="scorecard-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-      {[1, 2, 3, 4].map(() => (
-        <div class="animate-pulse flex flex-col p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
-          <div class="h-2 bg-slate-200 rounded w-1/2 mb-4"></div>
-          <div class="h-6 bg-slate-200 rounded w-3/4"></div>
-        </div>
-      ))}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 p-6 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+      <div class="flex flex-col gap-2">
+        <label for="filter-month" class="text-sm font-semibold text-slate-700 dark:text-slate-300">Pilih Bulan:</label>
+        <select id="filter-month" class="p-2 rounded border border-slate-300 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500">
+          <option value="All">Semua Bulan (YTD)</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="filter-kiln" class="text-sm font-semibold text-slate-700 dark:text-slate-300">Pilih Unit:</label>
+        <select id="filter-kiln" class="p-2 rounded border border-slate-300 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500">
+          <option value="All">Semua Kiln</option>
+        </select>
+      </div>
     </div>
 
-    <div class="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
-      <h3 class="text-xl font-bold mb-6 text-center text-slate-800 dark:text-white">Visualisasi Perbandingan Produksi</h3>
-      <div id="kiln-bar-chart"></div>
+    <div class="mb-12">
+      <h3 class="text-xl font-bold mb-4 text-slate-800 dark:text-white border-l-4 border-teal-600 pl-3">Produksi Terak</h3>
+      <div id="production-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+         </div>
+    </div>
+
+    <div class="mb-12">
+      <h3 class="text-xl font-bold mb-4 text-slate-800 dark:text-white border-l-4 border-blue-600 pl-3">UTILISASI</h3>
+      <div id="utilization-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+         </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
+        <h3 class="text-lg font-bold mb-6 text-center text-slate-800 dark:text-white uppercase tracking-wider">Perbandingan Produksi (Tons)</h3>
+        <div id="kiln-bar-chart"></div>
+      </div>
+      <div class="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
+        <h3 class="text-lg font-bold mb-6 text-center text-slate-800 dark:text-white uppercase tracking-wider">Kontribusi Produksi (%)</h3>
+        <div id="kiln-donut-chart"></div>
+      </div>
     </div>
   </section>
 
@@ -33,88 +55,124 @@ const metadata = { title: 'Exprosig — Dashboard Performance' };
     import Papa from 'papaparse';
     import ApexCharts from 'apexcharts';
 
-    async function initDashboard() {
+    let rawData = [];
+    let barChart, donutChart;
+    const COLOR_PALETTE = ['#0d9488', '#1e40af', '#14b8a6', '#3b82f6'];
+
+    async function init() {
       const sheetUrl = 'https://docs.google.com/spreadsheets/d/12Qy1QBVDLG9g1VgySGML5EgQc-90rHhw_JT58_eta6Q/export?format=csv&gid=0';
-      const kilnList = ['Kiln 1', 'Kiln 2', 'Kiln 3', 'Kiln 4'];
       
       try {
         const response = await fetch(sheetUrl);
         const csvString = await response.text();
-        
-        const { data } = Papa.parse(csvString, { 
-          header: true, 
-          skipEmptyLines: true 
-        });
+        const { data } = Papa.parse(csvString, { header: true, skipEmptyLines: true });
+        rawData = data;
 
-        // 1. Hitung Total Produksi
-        const stats = kilnList.map(kiln => {
-          const total = data
-            .filter(row => row.KILN === kiln)
-            .reduce((sum, row) => {
-              const cleanValue = row.Production ? row.Production.replace(/[^0-9.-]+/g, "") : "0";
-              return sum + (parseFloat(cleanValue) || 0);
-            }, 0);
-          return { name: kiln, total: total };
-        });
+        populateFilters(data);
+        updateDashboard();
 
-        // 2. Update Scorecards di HTML
-        const container = document.querySelector('#scorecard-container');
-        if (container) {
-          container.innerHTML = stats.map(s => `
-            <div class="flex flex-col p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
-              <p class="text-xs font-medium uppercase tracking-widest text-teal-600 dark:text-teal-400">Total Production ${s.name}</p>
-              <p class="text-2xl font-bold mt-2">
-                ${Math.round(s.total).toLocaleString('id-ID')} <span class="text-sm font-normal text-muted">Tons</span>
-              </p>
-            </div>
-          `).join('');
-        }
-
-        // 3. Update Timestamp
-        const timeElement = document.querySelector('#last-updated');
-        if (timeElement) {
-          timeElement.innerText = `Data Source Refreshed: ${new Date().toLocaleString('id-ID')} WIB`;
-        }
-
-        // 4. Render Chart
-        renderChart(stats);
-
+        document.getElementById('filter-month').addEventListener('change', updateDashboard);
+        document.getElementById('filter-kiln').addEventListener('change', updateDashboard);
+        document.getElementById('last-updated').innerText = `Sync: ${new Date().toLocaleString('id-ID')} WIB`;
       } catch (error) {
-        console.error("Gagal memuat data:", error);
+        console.error("Dashboard Init Error:", error);
       }
     }
 
-    function renderChart(stats) {
-      const options = {
-        series: [{
-          name: 'Total Production',
-          data: stats.map(s => s.total)
-        }],
-        chart: {
-          type: 'bar',
-          height: 350,
-          toolbar: { show: false }
-        },
-        plotOptions: {
-          bar: { borderRadius: 6, distributed: true, columnWidth: '60%' }
-        },
-        colors: ['#0d9488', '#1e40af', '#14b8a6', '#3b82f6'],
-        xaxis: {
-          categories: stats.map(s => s.name),
-        },
-        yaxis: {
-          labels: { formatter: (val) => val.toLocaleString('id-ID') }
-        },
-        tooltip: {
-          y: { formatter: (val) => val.toLocaleString('id-ID') + " Tons" }
-        }
-      };
-
-      const chart = new ApexCharts(document.querySelector("#kiln-bar-chart"), options);
-      chart.render();
+    function populateFilters(data) {
+      const months = [...new Set(data.map(item => item.Bulan))];
+      const kilns = [...new Set(data.map(item => item.KILN))];
+      const monthSelect = document.getElementById('filter-month');
+      const kilnSelect = document.getElementById('filter-kiln');
+      months.forEach(m => monthSelect.innerHTML += `<option value="${m}">${m}</option>`);
+      kilns.forEach(k => kilnSelect.innerHTML += `<option value="${k}">${k}</option>`);
     }
 
-    // Jalankan saat halaman dimuat
-    initDashboard();
+    function updateDashboard() {
+      const selectedMonth = document.getElementById('filter-month').value;
+      const selectedKiln = document.getElementById('filter-kiln').value;
+
+      let filtered = rawData;
+      if (selectedMonth !== 'All') filtered = filtered.filter(d => d.Bulan === selectedMonth);
+      if (selectedKiln !== 'All') filtered = filtered.filter(d => d.KILN === selectedKiln);
+
+      const kilnList = selectedKiln === 'All' ? ['Kiln 1', 'Kiln 2', 'Kiln 3', 'Kiln 4'] : [selectedKiln];
+
+      // Kalkulasi Metrik
+      const stats = kilnList.map(name => {
+        const kilnRows = filtered.filter(row => row.KILN === name);
+        
+        // 1. Sum Produksi
+        const totalProd = kilnRows.reduce((sum, row) => sum + (parseFloat(row.Production?.replace(/[^0-9.-]+/g, "")) || 0), 0);
+        
+        // 2. Average Utilisasi
+        const avgUtil = kilnRows.length > 0 
+            ? kilnRows.reduce((sum, row) => sum + (parseFloat(row['% Utilization']?.replace(/[^0-9.-]+/g, "")) || 0), 0) / kilnRows.length 
+            : 0;
+
+        return { name, totalProd, avgUtil };
+      });
+
+      renderScorecards(stats);
+      renderCharts(stats);
+    }
+
+    function renderScorecards(stats) {
+      const prodContainer = document.getElementById('production-container');
+      const utilContainer = document.getElementById('utilization-container');
+
+      // Render Produksi Terak
+      prodContainer.innerHTML = stats.map(s => `
+        <div class="flex flex-col p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400">${s.name}</p>
+          <p class="text-2xl font-bold mt-2 text-slate-800 dark:text-white">${Math.round(s.totalProd).toLocaleString('id-ID')} <span class="text-xs font-normal text-muted italic">Tons</span></p>
+        </div>
+      `).join('');
+
+      // Render Utilisasi
+      utilContainer.innerHTML = stats.map(s => `
+        <div class="flex flex-col p-5 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/30 rounded-lg shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">${s.name}</p>
+          <p class="text-2xl font-bold mt-2 text-slate-800 dark:text-white">${s.avgUtil.toFixed(2)} <span class="text-xs font-normal text-muted italic">%</span></p>
+        </div>
+      `).join('');
+    }
+
+    function renderCharts(stats) {
+      const barOptions = {
+        series: [{ name: 'Production', data: stats.map(s => s.totalProd) }],
+        chart: { type: 'bar', height: 350, toolbar: { show: false } },
+        colors: COLOR_PALETTE,
+        xaxis: { categories: stats.map(s => s.name) },
+        dataLabels: { 
+            enabled: true, 
+            formatter: val => Math.round(val).toLocaleString('id-ID'),
+            offsetY: -20,
+            style: { fontSize: '10px' }
+        },
+        plotOptions: { bar: { distributed: true, dataLabels: { position: 'top' } } },
+        yaxis: { labels: { formatter: val => Math.round(val).toLocaleString('id-ID') } }
+      };
+
+      const donutOptions = {
+        series: stats.map(s => s.totalProd),
+        labels: stats.map(s => s.name),
+        chart: { type: 'donut', height: 380 },
+        colors: COLOR_PALETTE,
+        dataLabels: { enabled: true, formatter: val => val.toFixed(1) + "%" },
+        legend: { position: 'bottom' }
+      };
+
+      if (barChart) barChart.destroy();
+      if (donutChart) donutChart.destroy();
+
+      barChart = new ApexCharts(document.querySelector("#kiln-bar-chart"), barOptions);
+      donutChart = new ApexCharts(document.querySelector("#kiln-donut-chart"), donutOptions);
+      
+      barChart.render();
+      donutChart.render();
+    }
+
+    init();
   </script>
 </Layout>
