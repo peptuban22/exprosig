@@ -1,142 +1,120 @@
 ---
 import Layout from '~/layouts/PageLayout.astro';
-import Papa from 'papaparse';
 
 const metadata = { title: 'Exprosig — Dashboard Performance' };
-
-let stats = [];
-let chartData = { labels: [], series: [] };
-let errorMsg = "";
-
-try {
-  // 1. Fetch data dari Google Sheets (format CSV)
-  const response = await fetch('https://docs.google.com/spreadsheets/d/12Qy1QBVDLG9g1VgySGML5EgQc-90rHhw_JT58_eta6Q/export?format=csv&gid=0');
-  
-  if (!response.ok) throw new Error("Gagal mengambil data dari Google Sheets");
-  
-  const csvString = await response.text();
-
-  // 2. Parse CSV ke JSON
-  const { data } = Papa.parse(csvString, { 
-    header: true, 
-    skipEmptyLines: true 
-  });
-
-  const kilnList = ['Kiln 1', 'Kiln 2', 'Kiln 3', 'Kiln 4'];
-
-  // 3. Fungsi untuk menghitung TOTAL PRODUKSI (Sum)
-  const getTotalProduction = (kilnName) => {
-    return data
-      .filter(row => row.KILN === kilnName)
-      .reduce((sum, row) => {
-        // Membersihkan karakter non-angka agar aman saat dijumlahkan
-        const cleanValue = row.Production ? row.Production.replace(/[^0-9.-]+/g, "") : "0";
-        return sum + (parseFloat(cleanValue) || 0);
-      }, 0);
-  };
-
-  // 4. Siapkan data untuk Scorecards
-  stats = kilnList.map(name => ({
-    title: `Total Production ${name}`,
-    amount: getTotalProduction(name)
-  }));
-
-  // 5. Siapkan data untuk Chart
-  chartData = {
-    labels: kilnList,
-    series: stats.map(s => s.amount)
-  };
-
-} catch (e) {
-  errorMsg = e.message;
-}
 ---
 
 <Layout metadata={metadata}>
   <section class="px-4 py-16 mx-auto max-w-7xl">
-    {errorMsg ? (
-      <div class="p-4 bg-red-100 text-red-700 rounded-lg">Error: {errorMsg}</div>
-    ) : (
-      <>
-        <div class="max-w-xl mb-10 md:mx-auto sm:text-center lg:max-w-2xl md:mb-12">
-          <h2 class="text-3xl font-bold leading-tighter tracking-tighter mb-4 font-heading">
-            Kiln Production Performance 2026
-          </h2>
-          <p class="text-muted dark:text-slate-400">Akumulasi total produksi tahunan per unit kiln.</p>
-        </div>
+    <div class="max-w-xl mb-10 md:mx-auto sm:text-center lg:max-w-2xl md:mb-12">
+      <h2 class="text-3xl font-bold leading-tighter tracking-tighter mb-4 font-heading">
+        Kiln Production Performance 2026
+      </h2>
+      <p class="text-muted dark:text-slate-400">Data dinamis dari Google Sheets (Updated Daily via ETL).</p>
+      <p id="last-updated" class="text-xs text-teal-600 font-medium mt-2 italic"></p>
+    </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {stats.map(({ title, amount }) => (
-            <div class="flex flex-col p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
-              <p class="text-xs font-medium uppercase tracking-widest text-teal-600 dark:text-teal-400">{title}</p>
-              <p class="text-2xl font-bold mt-2">
-                {new Intl.NumberFormat('id-ID').format(amount.toFixed(0))} <span class="text-sm font-normal text-muted">Tons</span>
-              </p>
-            </div>
-          ))}
+    <div id="scorecard-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      {[1, 2, 3, 4].map(() => (
+        <div class="animate-pulse flex flex-col p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
+          <div class="h-2 bg-slate-200 rounded w-1/2 mb-4"></div>
+          <div class="h-6 bg-slate-200 rounded w-3/4"></div>
         </div>
+      ))}
+    </div>
 
-        <div class="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
-          <h3 class="text-xl font-bold mb-6 text-center text-slate-800 dark:text-white">Visualisasi Perbandingan Produksi</h3>
-          
-          <div 
-            id="kiln-bar-chart" 
-            data-labels={JSON.stringify(chartData.labels)} 
-            data-series={JSON.stringify(chartData.series)}
-          ></div>
-        </div>
-      </>
-    )}
+    <div class="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
+      <h3 class="text-xl font-bold mb-6 text-center text-slate-800 dark:text-white">Visualisasi Perbandingan Produksi</h3>
+      <div id="kiln-bar-chart"></div>
+    </div>
   </section>
 
   <script>
+    import Papa from 'papaparse';
     import ApexCharts from 'apexcharts';
 
-    const chartElement = document.querySelector("#kiln-bar-chart");
-    if (chartElement) {
-      const labels = JSON.parse(chartElement.getAttribute('data-labels'));
-      const seriesData = JSON.parse(chartElement.getAttribute('data-series'));
+    async function initDashboard() {
+      const sheetUrl = 'https://docs.google.com/spreadsheets/d/12Qy1QBVDLG9g1VgySGML5EgQc-90rHhw_JT58_eta6Q/export?format=csv&gid=0';
+      const kilnList = ['Kiln 1', 'Kiln 2', 'Kiln 3', 'Kiln 4'];
+      
+      try {
+        const response = await fetch(sheetUrl);
+        const csvString = await response.text();
+        
+        const { data } = Papa.parse(csvString, { 
+          header: true, 
+          skipEmptyLines: true 
+        });
 
+        // 1. Hitung Total Produksi
+        const stats = kilnList.map(kiln => {
+          const total = data
+            .filter(row => row.KILN === kiln)
+            .reduce((sum, row) => {
+              const cleanValue = row.Production ? row.Production.replace(/[^0-9.-]+/g, "") : "0";
+              return sum + (parseFloat(cleanValue) || 0);
+            }, 0);
+          return { name: kiln, total: total };
+        });
+
+        // 2. Update Scorecards di HTML
+        const container = document.querySelector('#scorecard-container');
+        if (container) {
+          container.innerHTML = stats.map(s => `
+            <div class="flex flex-col p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
+              <p class="text-xs font-medium uppercase tracking-widest text-teal-600 dark:text-teal-400">Total Production ${s.name}</p>
+              <p class="text-2xl font-bold mt-2">
+                ${Math.round(s.total).toLocaleString('id-ID')} <span class="text-sm font-normal text-muted">Tons</span>
+              </p>
+            </div>
+          `).join('');
+        }
+
+        // 3. Update Timestamp
+        const timeElement = document.querySelector('#last-updated');
+        if (timeElement) {
+          timeElement.innerText = `Data Source Refreshed: ${new Date().toLocaleString('id-ID')} WIB`;
+        }
+
+        // 4. Render Chart
+        renderChart(stats);
+
+      } catch (error) {
+        console.error("Gagal memuat data:", error);
+      }
+    }
+
+    function renderChart(stats) {
       const options = {
         series: [{
           name: 'Total Production',
-          data: seriesData
+          data: stats.map(s => s.total)
         }],
         chart: {
           type: 'bar',
           height: 350,
-          toolbar: { show: false },
-          animations: { enabled: true }
+          toolbar: { show: false }
         },
         plotOptions: {
-          bar: {
-            borderRadius: 6,
-            horizontal: false,
-            columnWidth: '60%',
-            distributed: true, // Warna berbeda tiap batang
-          }
+          bar: { borderRadius: 6, distributed: true, columnWidth: '60%' }
         },
-        dataLabels: { enabled: false },
-        colors: ['#0d9488', '#1e40af', '#14b8a6', '#3b82f6'], // Palet Teal & Blue
+        colors: ['#0d9488', '#1e40af', '#14b8a6', '#3b82f6'],
         xaxis: {
-          categories: labels,
-          labels: { style: { fontWeight: 600 } }
+          categories: stats.map(s => s.name),
         },
         yaxis: {
-          title: { text: 'Tons (Total)' },
-          labels: {
-            formatter: (val) => val.toLocaleString('id-ID')
-          }
+          labels: { formatter: (val) => val.toLocaleString('id-ID') }
         },
         tooltip: {
-          y: {
-            formatter: (val) => val.toLocaleString('id-ID') + " Tons"
-          }
+          y: { formatter: (val) => val.toLocaleString('id-ID') + " Tons" }
         }
       };
 
-      const chart = new ApexCharts(chartElement, options);
+      const chart = new ApexCharts(document.querySelector("#kiln-bar-chart"), options);
       chart.render();
     }
+
+    // Jalankan saat halaman dimuat
+    initDashboard();
   </script>
 </Layout>
