@@ -15,6 +15,15 @@ export const headerData = {
         },
       ],
     },
+    {
+      text: 'PSC',
+      links: [
+        {
+          text: 'TKDN 2026',
+          href: getPermalink('/tkdn-26'),
+        },
+      ],
+    },
 
     {
       text: 'Weekly Report', // Mengarah langsung ke halaman baru
