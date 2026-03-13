@@ -1,0 +1,48 @@
+---
+// src/components/Search.astro
+---
+
+<div id="search-container" class="ms-4">
+  <div id="search"></div>
+</div>
+
+<style is:inline>
+  /* Kustomisasi CSS agar serasi dengan navigasi Exprosig */
+  #search {
+    --pagefind-ui-primary: #0d9488; /* Teal-600 */
+    --pagefind-ui-text: #334155;
+    --pagefind-ui-background: #ffffff;
+    --pagefind-ui-border: #e2e8f0;
+    width: 250px;
+  }
+  
+  .dark #search {
+    --pagefind-ui-primary: #14b8a6;
+    --pagefind-ui-text: #f8fafc;
+    --pagefind-ui-background: #0f172a;
+    --pagefind-ui-border: #1e293b;
+  }
+
+  /* Mengecilkan tinggi bar pencarian agar pas di navbar */
+  .pagefind-ui__search-input {
+    padding: 6px 12px !important;
+    font-size: 0.875rem !important;
+  }
+</style>
+
+<link href="/_pagefind/pagefind-ui.css" rel="stylesheet" />
+<script src="/_pagefind/pagefind-ui.js" is:inline></script>
+
+<script is:inline>
+  window.addEventListener('DOMContentLoaded', () => {
+    new PagefindUI({
+      element: "#search",
+      showSubResults: true,
+      pageSize: 5,
+      translations: {
+        placeholder: "Cari data...",
+      },
+      showImages: false, // Matikan jika tidak menggunakan gambar di konten
+    });
+  });
+</script>
