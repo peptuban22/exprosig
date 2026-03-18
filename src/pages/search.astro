@@ -7,7 +7,9 @@ const metadata = { title: 'Pencarian Laporan — Exprosig' };
   <section class="px-4 py-20 mx-auto max-w-4xl min-h-screen">
     <div class="mb-10 text-center">
       <h1 class="text-4xl font-bold mb-4">Cari Laporan & Data</h1>
-      <p class="text-muted text-lg">Temukan data Kiln, TKDN, atau laporan mingguan dengan cepat.</p>
+      <p class="text-muted text-lg text-slate-600 dark:text-slate-400">
+        Temukan data Kiln, TKDN, atau laporan mingguan dengan cepat.
+      </p>
     </div>
 
     <div id="search" class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm min-h-[200px]"></div>
@@ -17,29 +19,34 @@ const metadata = { title: 'Pencarian Laporan — Exprosig' };
 
     <script is:inline>
       function initSearch() {
-        const selector = "#search";
-        const el = document.querySelector(selector);
-        
-        // Hapus isi sebelumnya jika ada (mencegah duplikasi/input freeze)
-        if (el) el.innerHTML = ""; 
-
+        // Cek apakah PagefindUI sudah termuat dari script eksternal
         if (typeof PagefindUI !== "undefined") {
-          new PagefindUI({
-            element: selector,
-            bundlePath: "/pagefind/", // Pastikan diakhiri slash
-            showSubResults: true,
-            autofocus: true,
-            translations: { 
-              placeholder: "Ketik kata kunci (misal: TKDN, Kiln 1, Januari)..." 
-            }
-          });
+          const el = document.querySelector('#search');
+          if (el) {
+            // Bersihkan elemen untuk mencegah duplikasi UI saat navigasi balik
+            el.innerHTML = ""; 
+            
+            new PagefindUI({
+              element: "#search",
+              bundlePath: "/pagefind/", 
+              showSubResults: true,
+              autofocus: true,
+              translations: {
+                placeholder: "Ketik kata kunci (TKDN, Kiln, Reliability)...",
+                zero_results: "Data tidak ditemukan untuk [SEARCH_TERM]"
+              }
+            });
+          }
+        } else {
+          // Jika gagal, coba inisialisasi ulang setelah jeda singkat
+          setTimeout(initSearch, 500);
         }
       }
 
-      // Inisialisasi saat halaman pertama dimuat
+      // Inisialisasi saat pertama kali load
       window.addEventListener('DOMContentLoaded', initSearch);
       
-      // Inisialisasi ulang saat navigasi Astro (View Transitions)
+      // Inisialisasi ulang saat perpindahan halaman via View Transitions
       document.addEventListener('astro:page-load', initSearch);
     </script>
   </section>
