@@ -22,6 +22,10 @@ export const headerData = {
           text: 'TKDN 2026',
           href: getPermalink('/tkdn-26'),
         },
+        {
+          text: 'Monitor Part Rutin',
+          href: getPermalink('/partrutin'),
+        },
       ],
     },
 
