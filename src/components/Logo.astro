@@ -1,9 +1,8 @@
 ---
-import { SITE } from 'astrowind:config';
+import { Image } from 'astro:assets';
+import logoImg from '~/assets/images/getsitelogo2.png'; // Sesuaikan nama file
 ---
 
-<span
-  class="self-center ml-2 rtl:ml-0 rtl:mr-2 text-2xl md:text-xl font-bold text-gray-900 whitespace-nowrap dark:text-white"
->
-  🚀 {SITE?.name}
+<span class="self-center ml-2 rtl:ml-0 rtl:mr-2 text-2xl md:text-xl font-bold text-gray-900 whitespace-nowrap dark:text-white">
+  <Image src={logoImg} alt="Expro Logo" width={165} height={40} class="h-8 w-auto" />
 </span>
